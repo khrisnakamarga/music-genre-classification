@@ -187,7 +187,7 @@ for i=1:3
     labelLength = [labelLength len];
 end
 
-%% Spectrogram Generation
+%% Spectrogram Generation Yay!
 clearvars -except X Fs labelLength;
 display("Preparing Spectrograms");
 
