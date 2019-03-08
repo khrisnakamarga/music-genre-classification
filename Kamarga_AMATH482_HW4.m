@@ -174,10 +174,10 @@ for i=1:3
     for j=1:5
         eval(['to = 1:length(test1_' num2str(i) '_' num2str(j) ');']);
         t = linspace(min(to),max(to), length(to)/downSample);
-        samples = floor((length(t)/fiveSeconds)/3);
+        samples = 20;
         eval(['temp = interp1(to, test1_' num2str(i) '_' num2str(j) ', t, ''linear'');']);
         for k=1:samples
-            start = 15*fiveSeconds + round(k*fiveSeconds); % the start of sampling 5 seconds every 40 seconds
+            start = 5*fiveSeconds + round(k*fiveSeconds); % the start of sampling 5 seconds every 40 seconds
             eval(['clip' num2str(i) '_' num2str(j) '_' num2str(k) ' = temp(start:start+fiveSeconds-1);']);
             eval(['clip' num2str(i) '_' num2str(j) '_' num2str(k) ' = mean(clip' num2str(i) '_' num2str(j) '_' num2str(k) ',1);']);
             eval(['X = [X; clip' num2str(i) '_' num2str(j) '_' num2str(k) '];']);
@@ -201,7 +201,7 @@ for i=1:size(X,1)
     t_sample = 0.1; %sampling rate
 
     tslide = 0:t_sample:L; % sampling time
-    twindow = 4; % the width of the super gaussian
+    twindow = 20; % the width of the super gaussian
     spc=[]; %matrix of all the wavelets
     for j=1:length(tslide)
         g = exp(-(twindow*(t-tslide(j))).^10); % super gaussian
@@ -209,10 +209,11 @@ for i=1:size(X,1)
         yft=fft(vf);
         spc=[spc;abs(fftshift(yft))];
     end
-%     visualize the spectrogram
-%     pcolor(tslide,fftshift(k)/(2*pi),spc.'), shading interp, colormap(hot)
     spc = spc.';
-    spc(1:round(size(spc, 1)/2)) = [];
+    spc(1:round(size(spc, 1)/2),:) = [];
+%     %visualizing the spectrogram
+%     pcolor(spc), shading interp, colormap(hot)
+%     drawnow
     [m n] = size(spc);
     allGabor = [allGabor; reshape(spc, 1, m*n)];
     if (mod(i,10) == 0 | i == size(X,1))
@@ -226,19 +227,19 @@ display("Performing SVD")
 
 n = size(allGabor, 1);
 [U S V] = svd(allGabor/sqrt(n-1), 'econ');
-lambda=diag(S).^2; % produce diagonal variances
+lambdaBig=diag(S).^2; % produce diagonal variances
 Y=U.'*allGabor; % produce the principal components projection
-figure(1)
-plot(1:length(lambda), lambda,'rx');
-title("Energy Plot")
-xlabel("Principal Component")
-ylabel("Energy")
+% figure(1)
+% plot(1:length(lambdaBig), lambdaBig,'rx');
+% title("Energy Plot")
+% xlabel("Principal Component")
+% ylabel("Energy")
 
 %% Training Data Preparation
 display("Preparing Training Data");
 
 Xtrain = [];
-for i=1:5
+for i=1:4
     projection = [];
     for j=1:size(allGabor, 1)
         projection = [projection; dot(allGabor(j,:),Y(i,:))];
@@ -246,12 +247,12 @@ for i=1:5
     Xtrain = [Xtrain projection];
 end
 
-figure(2)
-hold on
-plot(Xtrain(1:labelLength(1),1), Xtrain(1:labelLength(1), 2), 'rx');
-plot(Xtrain(labelLength(1)+1:labelLength(2),1), Xtrain(labelLength(1)+1:labelLength(2), 2), 'bo');
-plot(Xtrain(labelLength(2)+1:end,1), Xtrain(labelLength(2)+1:end, 2), 'k.');
-legend group1 group2 group3
+% figure(2)
+% hold on
+% plot(Xtrain(1:labelLength(1),1), Xtrain(1:labelLength(1), 2), 'rx');
+% plot(Xtrain(labelLength(1)+1:labelLength(2),1), Xtrain(labelLength(1)+1:labelLength(2), 2), 'bo');
+% plot(Xtrain(labelLength(2)+1:end,1), Xtrain(labelLength(2)+1:end, 2), 'k.');
+% legend group1 group2 group3
 
 %% Naive Bayes Training Model
 display("Creating Naive Bayes Training Model");
@@ -315,7 +316,7 @@ for i=1:3
 end
 
 %% Regenerate Spectrogram
-clearvars -except X Fs labelLength mdl Xtrain;
+clearvars -except X Fs labelLength mdl Xtrain lambdaBig;
 display("Regenerating Spectrograms")
 
 allGabor = [];
@@ -328,7 +329,7 @@ for i=1:size(X,1)
     t_sample = 0.1; %sampling rate
 
     tslide = 0:t_sample:L; % sampling time
-    twindow = 4; % the width of the super gaussian
+    twindow = 20; % the width of the super gaussian
     spc=[]; %matrix of all the wavelets
     for j=1:length(tslide)
         g = exp(-(twindow*(t-tslide(j))).^10); % super gaussian
@@ -339,31 +340,31 @@ for i=1:size(X,1)
 %     visualize the spectrogram
 %     pcolor(tslide,fftshift(k)/(2*pi),spc.'), shading interp, colormap(hot)
     spc = spc.';
-    spc(1:round(size(spc, 1)/2)) = [];
+    spc(1:round(size(spc, 1)/2),:) = [];
     [m n] = size(spc);
     allGabor = [allGabor; reshape(spc, 1, m*n)];
-    if (mod(i,10) == 0)
+    if (mod(i,10) == 0 | i == size(X,1))
         fprintf('%f percent completed \n', i/size(X,1)*100);
     end
 end
 
 %% SVD of the Resample
-clearvars -except allGabor labelLength label mdl Xtrain;
+clearvars -except allGabor labelLength label mdl Xtrain lambdaBig;
 display("SVDing the resampled data")
 
 n = size(allGabor, 1);
 [U S V] = svd(allGabor/sqrt(n-1), 'econ');
 lambda=diag(S).^2; % produce diagonal variances
 Y=U.'*allGabor; % produce the principal components projection
-figure(3)
-plot(1:length(lambda), lambda,'rx');
-title("Energy Plot")
-xlabel("Principal Component")
-ylabel("Energy")
+% figure(3)
+% plot(1:length(lambda), lambda,'rx');
+% title("Energy Plot")
+% xlabel("Principal Component")
+% ylabel("Energy")
 
 clc;
 Xpredict = [];
-for i=1:5
+for i=1:4
     projection = [];
     for j=1:size(allGabor, 1)
         projection = [projection; dot(allGabor(j,:),Y(i,:)')];
@@ -371,12 +372,12 @@ for i=1:5
     Xpredict = [Xpredict projection];
 end
 %%
-figure(2)
-hold on
-plot(Xpredict(1:labelLength(1),1), Xpredict(1:labelLength(1), 2), 'rx', 'LineWidth', 5);
-plot(Xpredict(labelLength(1)+1:labelLength(2),1), Xpredict(labelLength(1)+1:labelLength(2), 2), 'bo', 'LineWidth', 5);
-plot(Xpredict(labelLength(2)+1:end,1), Xpredict(labelLength(2)+1:end, 2), 'k^', 'LineWidth', 5);
-legend group1 group2 group3
+% figure(2)
+% hold on
+% plot(Xpredict(1:labelLength(1),1), Xpredict(1:labelLength(1), 2), 'rx', 'LineWidth', 5);
+% plot(Xpredict(labelLength(1)+1:labelLength(2),1), Xpredict(labelLength(1)+1:labelLength(2), 2), 'bo', 'LineWidth', 5);
+% plot(Xpredict(labelLength(2)+1:end,1), Xpredict(labelLength(2)+1:end, 2), 'k^', 'LineWidth', 5);
+% legend group1 group2 group3
 
 %%
 display("Predicting")
@@ -385,8 +386,11 @@ answer = [];
 correctAnswer = 0;
 for i=1:length(Xpredict)
     currAnswer = predict(mdl, Xpredict(i,:));
+    currAnswer = string(currAnswer);
     answer = [answer currAnswer];
-    if (currAnswer == label(i))
+    if (i <= 15 & currAnswer == 'group1' | ...
+        i> 15 & i <= 30 & currAnswer == 'group2' | ...
+        i> 30 & currAnswer == 'group3')
         correctAnswer = correctAnswer +1;
     end
 end
