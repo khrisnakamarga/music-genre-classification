@@ -226,8 +226,7 @@ end
 clearvars -except allGabor labelLength;
 display("Performing SVD")
 
-n = size(allGabor, 1);
-[U S V] = svd(allGabor/sqrt(n-1), 'econ');
+[U S V] = svd(allGabor-mean(allGabor(:)), 'econ');
 lambdaBig=diag(S).^2; % produce diagonal variances
 Y=U.'*allGabor; % produce the principal components projection
 % figure(1)
@@ -259,17 +258,51 @@ end
 display("Creating Naive Bayes Training Model");
 
 label = [];
-for i=1:labelLength(1)
+for i=1:labelLength(1)-15
     label = [label; "group1"];
 end
-for i=labelLength(1)+1:labelLength(2)
+for i=labelLength(1)+1-15:labelLength(2)-15
     label = [label; "group2"];
 end
-for i=labelLength(2)+1:length(Xtrain)
+for i=labelLength(2)-15+1:300-15
     label = [label; "group3"];
 end
 
+Xtrain = [V(1:labelLength(1),:); V(labelLength(1)+1:labelLength(2),:); V(labelLength(2)+1:300,:)];
+
 mdl = fitcnb(Xtrain, label);
+
+%% Predict ones that has already been discovered
+truth = [];
+for i=1:15
+    truth = [truth; "group1"];
+end
+for i=16:30
+    truth = [truth; "group2"];
+end
+for i=31:45
+    truth = [truth; "group3"];
+end
+
+test = [V(76:100,:); V(176:200,:); V(276:300,:)];
+answer = [];
+correctAnswer = 0;
+for i=1:size(test,1)
+    currAnswer = predict(mdl, test(i,:));
+    currAnswer = string(currAnswer);
+    answer = [answer currAnswer];
+    if (i <= 15 & currAnswer == 'group1' | ...
+        i> 15 & i <= 30 & currAnswer == 'group2' | ...
+        i> 30 & currAnswer == 'group3')
+        correctAnswer = correctAnswer +1;
+    end
+end
+
+%% end
+
+
+
+
 
 %% Resample
 display("Resampling new clips")
