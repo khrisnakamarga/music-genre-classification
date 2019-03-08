@@ -145,6 +145,7 @@
 %% Music Classification
 clear all; close all; clc;
 load automate
+eval(['display(''Test' num2str(folder) ''');'])
 
 eval(['cd test' num2str(folder)])
 files = dir('*.*');
