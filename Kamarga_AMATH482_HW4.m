@@ -2,6 +2,8 @@
 % AMATH 482 - Homework 4
 clear all; close all; clc;
 
+% willie wuz here
+
 cd 'C:\Users\Khrisna Adi Kamarga\Desktop\AMATH 482\HW4'
 cd 'yalefaces';
 
@@ -127,7 +129,7 @@ end
 clc;
 
 % Reducing the rank
-r = 3;
+r = 32;
 Unew = U(:,1:r); Snew = S(1:r,1:r); Vnew = V(:,1:r);
 Xr = Unew*Snew*Vnew';
 
@@ -236,14 +238,14 @@ display("Performing SVD")
 
 n = size(allGabor, 1);
 [U S V] = svd(allGabor, 'econ');
-lambdaBig=diag(S).^2; % produce diagonal variances
+lambdaBig=diag(S); % produce diagonal variances
 Y=U.'*allGabor; % produce the principal components projection
 % allGabor=allGabor-mean(allGabor(:));
 % figure(1)
-% plot(1:length(lambdaBig), lambdaBig,'rx');
-% title("Energy Plot")
-% xlabel("Principal Component")
-% ylabel("Energy")
+plot(1:length(lambdaBig), lambdaBig,'rx');
+title("Energy Plot")
+xlabel("Principal Component")
+ylabel("Energy")
 
 %% Training Data Preparation
 display("Preparing Training Data");
